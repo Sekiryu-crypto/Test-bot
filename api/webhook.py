@@ -35,4 +35,4 @@ async def handler(request):
         body = await request.json()
         await process_update(body)
         return {"ok": True}
-    return {"ok": False, "message": "Only POST allowed"} 
+    return {"ok": False, "message": "Only POST allowed"}
