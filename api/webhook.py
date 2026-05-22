@@ -10,6 +10,11 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 class handler(BaseHTTPRequestHandler):
 
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running")
+
     def do_POST(self):
         content_length = int(self.headers['Content-Length'])
         body = self.rfile.read(content_length)
