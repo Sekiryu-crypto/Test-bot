@@ -1,63 +1,33 @@
+from http.server import BaseHTTPRequestHandler
+import json
 import os
-import sys
-from pathlib import Path
+import requests
 
-from telegram import Update
-from telegram.ext import Application
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# Add root directory to imports
-sys.path.append(str(Path(__file__).parent.parent))
-
-from bot import create_application
-
-# Global app instance
-app = None
+API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
-async def get_application():
-    global app
+class handler(BaseHTTPRequestHandler):
 
-    if app is None:
-        TOKEN = os.getenv("BOT_TOKEN")
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])
+        body = self.rfile.read(content_length)
 
-        app = create_application()
+        data = json.loads(body)
 
-        # Initialize application
-        await app.initialize()
+        if "message" in data:
+            chat_id = data["message"]["chat"]["id"]
+            text = data["message"].get("text", "")
 
-        # Set bot token
-        app.bot.token = TOKEN
+            requests.post(
+                f"{API_URL}/sendMessage",
+                json={
+                    "chat_id": chat_id,
+                    "text": f"You said: {text}"
+                }
+            )
 
-    return app
-
-
-async def handler(request):
-    """
-    Vercel webhook handler
-    """
-
-    if request.method != "POST":
-        return {
-            "statusCode": 200,
-            "body": "Bot is running"
-        }
-
-    try:
-        data = await request.json()
-
-        application = await get_application()
-
-        update = Update.de_json(data, application.bot)
-
-        await application.process_update(update)
-
-        return {
-            "statusCode": 200,
-            "body": "ok"
-        }
-
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": str(e)
-        }
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"ok")
